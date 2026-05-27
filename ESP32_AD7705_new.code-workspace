@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../common-libs/AD7705"
+		}
+	],
+	"settings": {}
+}
