@@ -19,7 +19,7 @@ Osservazioni relative alla flessibilità della classe:
 
 #include <Arduino.h>
 #include <SPI.h>
-#include "./AD7705/AD7705.h"
+#include "AD7705.h"
 
 // Definizione dei pin per ESP32
 #define PIN_CS 5
@@ -51,7 +51,7 @@ void setup()
         while (1)
             ; // Stop se l'hardware non c'è
     }
-    
+
     Serial.println("ADC inizializzato.");
     // Registro clock
     Serial.print("Clock Reg  (0x0C if at 50Hz): ");
@@ -62,7 +62,7 @@ void setup()
 
     // Configurazione CANALE 1: Unipolare, Guadagno 1 (Range 0-2.5V)
     Serial.println("Configurazione Canale 1...");
-    adc.setConfig(AD7705_ESP32::CH1, currentMode, AD7705_ESP32::G2);
+    adc.setConfig(AD7705_ESP32::CH1, currentMode, AD7705_ESP32::G1);
 
     // debug rapido: lettura del Setup Register CH1
     delay(2);
@@ -84,10 +84,10 @@ void setup()
             ;
     }
 
-    // Configurazione CANALE 2: Bipolare, Guadagno 8 (Range +/- 312.5mV)
+    // Configurazione CANALE 2: Bipolare, Guadagno 2 (Range 0-1.25V)
     Serial.println("Configurazione Canale 2...");
     adc.setConfig(AD7705_ESP32::CH2, AD7705_ESP32::UNIPOLAR, AD7705_ESP32::G2);
-    
+
     // debug rapido: lettura del Setup Register CH2
     delay(2);
     Serial.print("Setup Reg CH2: ");
@@ -119,11 +119,27 @@ AD7705_ESP32::Channel currentCh = AD7705_ESP32::CH1;
 
 void loop()
 {
+    static float voltages[2];
+    static float R2 = 0.0; // Resistenza NTC calcolata, inizialmente 0
+    int idx = 0;
+    float R3 = 3.3e3;
+    float R45 = 20e3;
+    float R345 = R3 * R45 / (R3 + R45);
+
     // Verifichiamo se il semaforo è stato rilasciato dall'ISR
     if (adc.available())
     {
         int16_t raw = adc.getRawData();
         float voltage = adc.getVoltage();
+
+        if (currentCh == AD7705_ESP32::CH1)
+        {
+            voltages[0] = voltage;
+        }
+        else
+        {
+            voltages[1] = voltage;
+        }
 
         Serial.print("CH: ");
         Serial.print(currentCh == AD7705_ESP32::CH1 ? "1" : "2");
@@ -138,9 +154,21 @@ void loop()
             Serial.print(raw); // Stampa correttamente con segno -32768 a +32767
         }
         Serial.print(" | Voltage: ");
-        Serial.print(voltage, 4);
-        Serial.println(" mV");
+        Serial.print(voltage * 2.0 , 4); // entrambi i canali hanno un partitore x2
+        Serial.print(" mV");
     }
+
+    // calcolo resistore R2 (NTC)
+    float v12 = voltages[0] - voltages[1];
+    float i12 = voltages[1] / R345;
+    if (voltages[1] != 0.0)
+    {
+        R2 = v12 / i12;
+    }
+
+    Serial.print(" | R2 (NTC): ");
+    Serial.print(R2, 2);
+    Serial.println(" Ohm");
 
     // Esempio di commutazione canale ogni 5 secondi
     if (millis() - lastSwitchTime > 5000)
