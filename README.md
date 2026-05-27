@@ -240,7 +240,7 @@ void setup()
 
     // Configurazione CANALE 1: Unipolare, Guadagno 1 (Range 0-2.5V)
     Serial.println("Configurazione Canale 1...");
-    adc.setConfig(AD7705_ESP32::CH1, currentMode, AD7705_ESP32::G2);
+    adc.setConfig(AD7705_ESP32::CH1, currentMode, AD7705_ESP32::G1);
 
     // Esegui calibrazione (richiede tempo, l'ADC campiona zero e fondo scala)
     Serial.println("Calibrazione Canale 1 in corso...");
@@ -259,7 +259,7 @@ void setup()
 
     // Configurazione CANALE 2: Bipolare, Guadagno 8 (Range +/- 312.5mV)
     Serial.println("Configurazione Canale 2...");
-    adc.setConfig(AD7705_ESP32::CH2, AD7705_ESP32::UNIPOLAR, AD7705_ESP32::G2);
+    adc.setConfig(AD7705_ESP32::CH2, AD7705_ESP32::UNIPOLAR, AD7705_ESP32::G8);
 
     Serial.println("Calibrazione Canale 2 in corso...");
     if (adc.calibrate(AD7705_ESP32::CH2))
